@@ -98,7 +98,7 @@ function App() {
     <div className="App" style={{ padding: 20 }}>
       <h1>Welcome, {user.email}! TEST</h1>
       <button onClick={() => signOut(auth)}>Log Out</button>
-      <h2>Tokens: {tokenBalance}</h2>
+      <h2>Tokens!: {tokenBalance}</h2>
       <h2>My Chores</h2>
       <form onSubmit={(e) => {
         e.preventDefault();
