@@ -84,6 +84,51 @@ function App() {
       tokenBalance: tokenBalance + chore.tokens
     });
 
-    // Update lo
-  }
+    // Update local states
+    setChores(prev =>
+      prev.map(ch => ch.id === id ? { ...ch, completed: true } : ch)
+    );
+    setTokenBalance(prev => prev + chore.tokens);
+  };
+
+  if (!user) return <Login onLogin={() => {}} />;
+  if (loading) return <p>Loading...</p>;
+
+  return (
+    <div className="App" style={{ padding: 20 }}>
+      <h1>Welcome, {user.email}</h1>
+      <button onClick={() => signOut(auth)}>Log Out</button>
+      <h2>Tokens: {tokenBalance}</h2>
+      <h2>My Chores</h2>
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        const form = e.target;
+        const name = form.chore.value;
+        const tokens = form.tokens.value;
+        if (name && tokens) {
+          addChore(name, tokens);
+          form.reset();
+        }
+      }}>
+        <input name="chore" placeholder="Chore name" required />
+        <input name="tokens" placeholder="Tokens" type="number" required />
+        <button type="submit">Add</button>
+      </form>
+
+      <ul>
+        {chores.map(chore => (
+          <li key={chore.id}>
+            {chore.name} - {chore.tokens} tokens
+            {!chore.completed ? (
+              <button onClick={() => completeChore(chore.id)}>Complete</button>
+            ) : (
+              <span> ✅</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
+
+export default App;
