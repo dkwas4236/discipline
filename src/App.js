@@ -4,9 +4,9 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, getDocs, addDoc, updateDoc, doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import Login from "./components/Login";
-import TokenBalance from "./components/TokenBalance";
-import TaskList from "./components/TaskList";
-import RewardList from "./components/RewardList";
+//import TokenBalance from "./components/TokenBalance";
+//import TaskList from "./components/TaskList";
+//import RewardList from "./components/RewardList";
 
 function App() {
   const [user, setUser] = useState(null);
