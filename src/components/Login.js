@@ -1,4 +1,3 @@
-// src/components/Login.js
 import React, { useState } from "react";
 import { auth } from "../firebase";
 import {
@@ -27,9 +26,19 @@ function Login({ onLogin }) {
     }
   };
 
+  const styles = {
+    container: { maxWidth: 320, margin: "auto", padding: 20, border: "1px solid #ddd", borderRadius: 8 },
+    input: { width: "100%", marginBottom: 10, padding: 8, fontSize: 16 },
+    button: { width: "100%", padding: 10, cursor: "pointer" },
+    error: { color: "red", marginBottom: 10, textAlign: "center" },
+    toggleText: { marginTop: 10, cursor: "pointer", color: "blue", textAlign: "center", userSelect: "none" }
+  };
+
   return (
-    <div style={{ maxWidth: 320, margin: "auto", padding: 20 }}>
-      <h2>{isNewUser ? "Sign Up" : "Log In"}</h2>
+    <div style={styles.container}>
+      <h2 style={{ textAlign: "center", marginBottom: 20 }}>
+        {isNewUser ? "Sign Up" : "Log In"}
+      </h2>
       <form onSubmit={handleSubmit}>
         <input
           type="email"
@@ -37,7 +46,7 @@ function Login({ onLogin }) {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={{ width: "100%", marginBottom: 10, padding: 8 }}
+          style={styles.input}
         />
         <input
           type="password"
@@ -45,14 +54,20 @@ function Login({ onLogin }) {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ width: "100%", marginBottom: 10, padding: 8 }}
+          style={styles.input}
         />
-        <button type="submit" style={{ width: "100%", padding: 10 }}>
+        <button type="submit" style={styles.button}>
           {isNewUser ? "Sign Up" : "Log In"}
         </button>
       </form>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <p style={{ marginTop: 10, cursor: "pointer", color: "blue" }} onClick={() => setIsNewUser(!isNewUser)}>
+      {error && <p style={styles.error}>{error}</p>}
+      <p
+        style={styles.toggleText}
+        onClick={() => setIsNewUser(!isNewUser)}
+        role="button"
+        tabIndex={0}
+        onKeyPress={() => setIsNewUser(!isNewUser)}
+      >
         {isNewUser ? "Already have an account? Log In" : "New user? Sign Up"}
       </p>
     </div>
@@ -60,3 +75,4 @@ function Login({ onLogin }) {
 }
 
 export default Login;
+
