@@ -16,6 +16,7 @@ import Login from "./components/Login";
 import TokenBalance from "./components/TokenBalance";
 import TaskList from "./components/TaskList";
 import ManageGoals from "./pages/ManageGoals";
+import Shop from "./pages/Shop";
 
 function Home({ user, chores, tokenBalance, completeChore }) {
   const styles = {
@@ -37,6 +38,9 @@ function Home({ user, chores, tokenBalance, completeChore }) {
 
       <Link to="/goals">
         <button style={styles.button}>Manage Daily Goals</button>
+      </Link>
+      <Link to="/shop">
+        <button style={{ marginTop: 20, marginLeft: 10 }}>Visit Shop</button>
       </Link>
     </div>
   );
@@ -177,6 +181,16 @@ function App() {
             />
           }
         />
+        <Route
+          path="/shop"
+          element={
+            <Shop
+              user={user}
+              tokenBalance={tokenBalance}
+              setTokenBalance={setTokenBalance}
+          />
+        }
+      />
       </Routes>
     </Router>
   );
