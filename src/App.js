@@ -158,40 +158,41 @@ function App() {
 
   return (
     <Router>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Home
-              user={user}
-              chores={chores}
-              tokenBalance={tokenBalance}
-              completeChore={completeChore}
-            />
-          }
-        />
-        <Route
-          path="/goals"
-          element={
-            <ManageGoals
-              user={user}
-              chores={chores}
-              addChore={addChore}
-              deleteChore={deleteChore}
-            />
-          }
-        />
-        <Route
-          path="/shop"
-          element={
-            <Shop
-              user={user}
-              tokenBalance={tokenBalance}
-              setTokenBalance={setTokenBalance}
-          />
-        }
+<Routes>
+  <Route
+    path="/"
+    element={
+      <Home
+        user={user}
+        chores={chores}
+        tokenBalance={tokenBalance}
+        completeChore={completeChore}
       />
-      </Routes>
+    }
+  />
+  <Route
+    path="/goals"
+    element={
+      <ManageGoals
+        user={user}
+        chores={chores}
+        addChore={addChore}
+        deleteChore={deleteChore}
+      />
+    }
+  />
+  <Route
+    path="/shop"
+    element={
+      <Shop
+        user={user}
+        tokenBalance={tokenBalance}
+        setTokenBalance={setTokenBalance}
+      />
+    }
+  />
+</Routes>
+
     </Router>
   );
 }

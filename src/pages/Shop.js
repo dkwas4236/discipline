@@ -2,17 +2,17 @@
 import React, { useEffect, useState } from "react";
 import {
   collection,
-  getDocs,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
   addDoc,
   doc,
   updateDoc,
   deleteDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  limit,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { where } from "firebase/firestore"
 
 function Shop({ user, tokenBalance, setTokenBalance }) {
   const [rewards, setRewards] = useState([]);
@@ -22,8 +22,9 @@ function Shop({ user, tokenBalance, setTokenBalance }) {
   const [newRewardCost, setNewRewardCost] = useState("");
   const [newRewardDesc, setNewRewardDesc] = useState("");
   const [notifications, setNotifications] = useState([]);
+  const [archivedNotifications, setArchivedNotifications] = useState([]);
 
-  // Load rewards and listen for updates in real-time
+  // Load rewards and listen for updates
   useEffect(() => {
     const rewardsRef = collection(db, "rewards");
     const q = query(rewardsRef, orderBy("name", "asc"));
@@ -33,6 +34,7 @@ function Shop({ user, tokenBalance, setTokenBalance }) {
         id: doc.id,
         ...doc.data(),
       }));
+      console.log("[Rewards] Loaded:", loadedRewards);
       setRewards(loadedRewards);
       setLoading(false);
     });
@@ -40,26 +42,42 @@ function Shop({ user, tokenBalance, setTokenBalance }) {
     return () => unsubscribe();
   }, []);
 
-  // Load notifications addressed to current user (optional)
+  // Load notifications for this user (both uncompleted and completed)
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log("[Notifications] No user logged in yet.");
+      return;
+    }
+
+    console.log("[Notifications] Listening for user:", user.uid);
+
     const notificationsRef = collection(db, "notifications");
-    const q = query(notificationsRef, 
-                    // only last 10 notifications or similar
-                    orderBy("timestamp", "desc"), 
-                    limit(10));
+    const q = query(
+        notificationsRef,
+        where("recipientId", "==", user.uid),
+        orderBy("timestamp", "desc"),
+        limit(50)
+        );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notifs = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(n => n.recipientId === user.uid);
-      setNotifications(notifs);
+      const allNotifs = snapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((n) => n.recipientId === user.uid);
+
+      console.log(
+        `[Notifications] Total for user (${user.uid}):`,
+        allNotifs.length,
+        allNotifs
+      );
+
+      setNotifications(allNotifs.filter((n) => !n.completed));
+      setArchivedNotifications(allNotifs.filter((n) => n.completed));
     });
 
     return () => unsubscribe();
   }, [user]);
 
-  // Redeem a reward
+  // Redeem reward
   const redeemReward = async (reward) => {
     setError("");
     if (tokenBalance < reward.cost) {
@@ -72,7 +90,7 @@ function Shop({ user, tokenBalance, setTokenBalance }) {
     }
 
     try {
-      // Deduct tokens from user doc
+      console.log("[Redeem] Redeeming reward:", reward);
       const userDocRef = doc(db, "users", user.uid);
       await updateDoc(userDocRef, {
         tokenBalance: tokenBalance - reward.cost,
@@ -81,23 +99,24 @@ function Shop({ user, tokenBalance, setTokenBalance }) {
 
       alert(`You redeemed: ${reward.name}`);
 
-      // Notify the reward creator
-      const notificationsRef = collection(db, "notifications");
-      await addDoc(notificationsRef, {
+      await addDoc(collection(db, "notifications"), {
         recipientId: reward.creatorId,
         message: `${user.email} redeemed your reward: ${reward.name}`,
         timestamp: new Date(),
+        completed: false,
       });
+      console.log("[Redeem] Notification created for reward creator");
     } catch (e) {
       setError("Failed to redeem reward.");
-      console.error(e);
+      console.error("[Redeem] Error:", e);
     }
   };
 
-  // Add new reward
+  // Add reward
   const addReward = async (e) => {
     e.preventDefault();
     setError("");
+
     if (newRewardName.trim() === "" || newRewardCost === "") return;
 
     const costNum = Number(newRewardCost);
@@ -107,8 +126,8 @@ function Shop({ user, tokenBalance, setTokenBalance }) {
     }
 
     try {
-      const rewardsRef = collection(db, "rewards");
-      await addDoc(rewardsRef, {
+      console.log("[AddReward] Adding reward:", newRewardName, costNum);
+      await addDoc(collection(db, "rewards"), {
         name: newRewardName.trim(),
         cost: costNum,
         description: newRewardDesc.trim() || "",
@@ -117,21 +136,50 @@ function Shop({ user, tokenBalance, setTokenBalance }) {
       setNewRewardName("");
       setNewRewardCost("");
       setNewRewardDesc("");
+      console.log("[AddReward] Reward added successfully");
     } catch (e) {
       setError("Failed to add reward.");
-      console.error(e);
+      console.error("[AddReward] Error:", e);
     }
   };
 
-  // Delete a reward (only creator can delete)
+  // Delete reward
   const deleteReward = async (id) => {
     if (!window.confirm("Delete this reward?")) return;
     try {
-      const rewardDocRef = doc(db, "rewards", id);
-      await deleteDoc(rewardDocRef);
+      console.log("[DeleteReward] Deleting reward:", id);
+      await deleteDoc(doc(db, "rewards", id));
+      console.log("[DeleteReward] Reward deleted");
     } catch (e) {
       setError("Failed to delete reward.");
-      console.error(e);
+      console.error("[DeleteReward] Error:", e);
+    }
+  };
+
+  // Complete (mark notification completed)
+  const completeNotification = async (id) => {
+    try {
+      console.log("[CompleteNotification] Completing notification:", id);
+      const notifRef = doc(db, "notifications", id);
+
+      await updateDoc(notifRef, { completed: true });
+      console.log("[CompleteNotification] Notification marked as completed");
+    } catch (e) {
+      console.error("[CompleteNotification] Failed:", e);
+      alert("Could not complete notification.");
+    }
+  };
+
+  // Optional: Unarchive notification (mark completed false)
+  const unarchiveNotification = async (id) => {
+    try {
+      console.log("[UnarchiveNotification] Unarchiving notification:", id);
+      const notifRef = doc(db, "notifications", id);
+      await updateDoc(notifRef, { completed: false });
+      console.log("[UnarchiveNotification] Notification unarchived");
+    } catch (e) {
+      console.error("[UnarchiveNotification] Failed:", e);
+      alert("Could not unarchive notification.");
     }
   };
 
@@ -220,8 +268,65 @@ function Shop({ user, tokenBalance, setTokenBalance }) {
       {notifications.length === 0 && <p>No notifications</p>}
       <ul style={{ listStyleType: "none", paddingLeft: 0 }}>
         {notifications.map((notif) => (
-          <li key={notif.id} style={{ marginBottom: 6, color: "green" }}>
-            {notif.message}
+          <li
+            key={notif.id}
+            style={{
+              marginBottom: 10,
+              padding: 8,
+              backgroundColor: "#e6ffe6",
+              borderRadius: 4,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>{notif.message}</span>
+            <button
+              style={{
+                marginLeft: 10,
+                fontSize: 12,
+                padding: "4px 10px",
+                cursor: "pointer",
+              }}
+              onClick={() => completeNotification(notif.id)}
+            >
+              Complete
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <hr />
+
+      <h3>Archived Notifications</h3>
+      {archivedNotifications.length === 0 && <p>No archived notifications</p>}
+      <ul style={{ listStyleType: "none", paddingLeft: 0 }}>
+        {archivedNotifications.map((notif) => (
+          <li
+            key={notif.id}
+            style={{
+              marginBottom: 10,
+              padding: 8,
+              backgroundColor: "#f0f0f0",
+              borderRadius: 4,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              color: "#777",
+            }}
+          >
+            <span>{notif.message}</span>
+            <button
+              style={{
+                marginLeft: 10,
+                fontSize: 12,
+                padding: "4px 10px",
+                cursor: "pointer",
+              }}
+              onClick={() => unarchiveNotification(notif.id)}
+            >
+              Unarchive
+            </button>
           </li>
         ))}
       </ul>
@@ -230,4 +335,6 @@ function Shop({ user, tokenBalance, setTokenBalance }) {
 }
 
 export default Shop;
+
+
 
